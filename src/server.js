@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import pino from 'pino-http';
 import helmet from 'helmet';
 import 'dotenv/config';
+import pino from 'pino-http';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
