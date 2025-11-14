@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
+import { errors } from 'celebrate';
 
 import { connectMongoDB } from './db/connectMongoDB.js';
 import notesRoutes from './routes/notesRoutes.js';
@@ -20,7 +21,9 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-app.use('/notes', notesRoutes);
+app.use(notesRoutes);
+
+app.use(errors());
 
 app.use(notFoundHandler);
 
