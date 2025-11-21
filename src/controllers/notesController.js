@@ -14,7 +14,6 @@ export const getAllNotes = async (req, res, next) => {
   }
 
   const notesQuery = Note.find(filter);
-
   const skip = (page - 1) * perPage;
 
   try {
