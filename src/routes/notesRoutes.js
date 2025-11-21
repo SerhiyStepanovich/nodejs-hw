@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { celebrate } from 'celebrate';
+import { authenticate } from '../middleware/authenticate.js';
 
 import {
   createNote,
@@ -17,6 +18,8 @@ import {
 } from '../validations/notesValidation.js';
 
 const notesRoutes = Router();
+
+notesRoutes.use('/notes', authenticate);
 
 notesRoutes.get('/notes', celebrate(getAllNotesSchema), getAllNotes);
 notesRoutes.get('/notes/:noteId', celebrate(noteIdSchema), getNoteById);
