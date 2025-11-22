@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose';
-import bcrypt from 'bcrypt';
 
 const userSchema = new Schema(
   {
@@ -13,23 +12,18 @@ const userSchema = new Schema(
   },
 );
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', function (next) {
   if (this.isNew) {
     if (!this.username) {
       this.username = this.email;
-    }
-
-    if (this.isModified('password')) {
-      const salt = await bcrypt.genSalt(10);
-      this.password = await bcrypt.hash(this.password, salt);
     }
   }
   next();
 });
 
-userSchema.method.toJSON = function () {
+userSchema.methods.toJSON = function () {
   const userObject = this.toObject();
-  delete userObject.pasword;
+  delete userObject.password;
   return userObject;
 };
 
