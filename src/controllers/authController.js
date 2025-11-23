@@ -12,7 +12,10 @@ export const registerUser = async (req, res, next) => {
     return next(createHttpError(400, 'Email in use'));
   }
 
-  const user = await User.create({ email, password });
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const user = await User.create({ email, password: hashedPassword });
 
   const session = await createSession(user._id);
   setSessionCookies(res, session);
