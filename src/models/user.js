@@ -1,11 +1,10 @@
 import { Schema, model } from 'mongoose';
-import bcrypt from 'bcrypt';
 
 const userSchema = new Schema(
   {
     username: { type: String, trim: true },
     email: { type: String, trim: true, unique: true, required: true },
-    password: { type: String, required: true, minlength: 8 },
+    password: { type: String, required: true },
   },
   {
     timestamps: true,
@@ -13,15 +12,14 @@ const userSchema = new Schema(
   },
 );
 
-userSchema.pre('save', async function () {
-  if (this.isNew && !this.username) {
-    this.username = this.email;
+userSchema.pre('save', function (next) {
+  if (this.isNew) {
+    if (!this.username) {
+      this.username = this.email;
+    }
   }
 
-  if (this.isModified('password') || this.isNew) {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-  }
+  next();
 });
 
 userSchema.methods.toJSON = function () {
