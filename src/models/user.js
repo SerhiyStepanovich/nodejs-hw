@@ -12,13 +12,15 @@ const userSchema = new Schema(
   },
 );
 
-userSchema.pre('save', function (next) {
-  if (this.isNew) {
-    if (!this.username) {
-      this.username = this.email;
-    }
+userSchema.pre('save', async function () {
+  if (this.isNew && !this.username) {
+    this.username = this.email;
   }
-  next();
+
+  if (this.isModified('password') || this.isNew) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 });
 
 userSchema.methods.toJSON = function () {
