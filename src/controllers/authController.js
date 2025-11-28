@@ -1,8 +1,10 @@
 import createHttpError from 'http-errors';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/user.js';
 import { Session } from '../models/session.js';
 import { createSession, setSessionCookies } from '../services/auth.js';
+import { sendEmail } from '../utils/sendMail.js';
 
 export const registerUser = async (req, res, next) => {
   const { email, password } = req.body;
@@ -89,4 +91,68 @@ export const logoutUser = async (req, res, next) => {
   res.clearCookie('refreshToken');
 
   res.status(204).send();
+};
+
+export const requestResetEmail = async (req, res, next) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res
+      .status(200)
+      .json({ message: 'Password reset email sent successfully' });
+  }
+
+  try {
+    const token = jwt.sign({ sub: user._id, email }, process.env.JWT_SECRET, {
+      expiresIn: '15m',
+    });
+
+    const resetLink = `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`;
+    const userName = user.username || user.email;
+
+    await sendEmail({
+      to: email,
+      subject: 'reset-password',
+      template: 'reset-password-email',
+      data: {
+        name: userName,
+        resetLink,
+      },
+    });
+
+    res.status(200).json({ message: 'Password reset email sent successfully' });
+  } catch {
+    next(
+      createHttpError(500, 'Failed to send the email, please try again later.'),
+    );
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  const { token, password } = req.body;
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return next(createHttpError(401, 'Invalid or expired token'));
+  }
+
+  const { sub: userId, email } = decoded;
+
+  const user = await User.findOne({ _id: userId, email });
+  if (!user) {
+    return next(createHttpError(404, 'User not found'));
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  user.password = hashedPassword;
+  await user.save();
+
+  res.status(200).json({
+    message: 'Password reset successfully',
+  });
 };
