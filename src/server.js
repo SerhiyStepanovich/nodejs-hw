@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import 'dotenv/config';
 import { errors } from 'celebrate';
 import cookieParser from 'cookie-parser';
+import userRoutes from './routes/userRoutes.js';
 
 import { connectMongoDB } from './db/connectMongoDB.js';
 import notesRoutes from './routes/notesRoutes.js';
@@ -27,6 +28,7 @@ app.use(cookieParser());
 
 app.use(notesRoutes);
 app.use(authRoutes);
+app.use(userRoutes);
 
 app.use(notFoundHandler);
 app.use(errors());
