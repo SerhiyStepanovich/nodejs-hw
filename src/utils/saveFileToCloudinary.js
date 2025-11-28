@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
-import streamifier from 'streamifier';
+import { Readable } from 'stream';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -8,21 +8,26 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
 });
 
 export const saveFileToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: 'avatars' },
+      {
+        folder: 'avatars',
+        transformation: [
+          { width: 200, height: 200, crop: 'thumb', gravity: 'face' },
+        ],
+      },
       (error, result) => {
-        if (result) {
-          resolve(result);
-        } else {
-          reject(error);
+        if (error) {
+          return reject(error);
         }
+        resolve(result);
       },
     );
 
-    streamifier.createReadStream(buffer).pipe(uploadStream);
+    Readable.from(buffer).pipe(uploadStream);
   });
 };
