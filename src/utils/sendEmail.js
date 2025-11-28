@@ -1,4 +1,3 @@
-// src/utils/sendMail.js
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import handlebars from 'handlebars';
