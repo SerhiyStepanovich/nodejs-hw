@@ -5,6 +5,8 @@ import { User } from '../models/user.js';
 import { Session } from '../models/session.js';
 import { createSession, setSessionCookies } from '../services/auth.js';
 import { sendEmail } from '../utils/sendMail.js';
+import handlebars from 'handlebars';
+import fs from 'fs/promises';
 
 export const registerUser = async (req, res, next) => {
   const { email, password } = req.body;
@@ -109,20 +111,27 @@ export const requestResetEmail = async (req, res, next) => {
     });
 
     const resetLink = `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`;
-    const userName = user.username || user.email;
+    const userName = user.username || user.email.split('@')[0];
+
+    const templatePath = `src/templates/reset-password-email.html`;
+    const source = await fs.readFile(templatePath, 'utf8');
+    const compiledTemplate = handlebars.compile(source);
+
+    const html = compiledTemplate({
+      name: userName,
+      resetLink,
+    });
 
     await sendEmail({
       to: email,
-      subject: 'reset-password',
-      template: 'reset-password-email',
-      data: {
-        name: userName,
-        resetLink,
-      },
+      subject: 'Скидання паролю',
+      html: html,
+      from: process.env.SMTP_FROM,
     });
 
     res.status(200).json({ message: 'Password reset email sent successfully' });
-  } catch {
+  } catch (error) {
+    console.error('Error sending reset email:', error);
     next(
       createHttpError(500, 'Failed to send the email, please try again later.'),
     );
@@ -135,7 +144,8 @@ export const resetPassword = async (req, res, next) => {
 
   try {
     decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
+  } catch (error) {
+    console.warn('JWT verification failed:', error.message);
     return next(createHttpError(401, 'Invalid or expired token'));
   }
 
@@ -151,6 +161,8 @@ export const resetPassword = async (req, res, next) => {
 
   user.password = hashedPassword;
   await user.save();
+
+  // await Session.deleteMany({ userId });
 
   res.status(200).json({
     message: 'Password reset successfully',
